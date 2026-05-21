@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma';
 import { generateStructuredJSON, generateText } from '../lib/gemini';
 import { generateImage } from '../lib/gemini';
+import { uploadImage } from '../lib/storage';
 
 const STORY_BIBLE_SCHEMA = {
   type: 'OBJECT',
@@ -164,11 +165,11 @@ export async function processCreateStory(jobId: string) {
     try {
       const refImages = charRefs.map(c => ({ data: c.referenceImageUrl!.replace(/^data:[^;]+;base64,/, ''), mimeType: 'image/png' }));
       const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3', imageSize: '2K' });
-      const dataUrl = `data:${result.mimeType};base64,${result.imageData.toString('base64')}`;
+      const fileUrl = await uploadImage(result.imageData, result.mimeType);
       await prisma.asset.create({
         data: {
           ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id,
-          assetType: 'chapter_page', fileUrl: dataUrl, mimeType: result.mimeType,
+          assetType: 'chapter_page', fileUrl, mimeType: result.mimeType,
           generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: fullPagePrompt },
         },
       });
@@ -233,9 +234,9 @@ export async function processContinueStory(jobId: string) {
     try {
       const refImages = charRefs.map(c => ({ data: c.referenceImageUrl!.replace(/^data:[^;]+;base64,/, ''), mimeType: 'image/png' }));
       const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3', imageSize: '2K' });
-      const dataUrl = `data:${result.mimeType};base64,${result.imageData.toString('base64')}`;
+      const fileUrl = await uploadImage(result.imageData, result.mimeType);
       await prisma.asset.create({
-        data: { ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id, assetType: 'chapter_page', fileUrl: dataUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: fullPagePrompt } },
+        data: { ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id, assetType: 'chapter_page', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: fullPagePrompt } },
       });
     } catch (imgErr: any) {
       console.error('Full page generation failed:', imgErr.message);
@@ -273,10 +274,10 @@ export async function processRegeneratePanel(jobId: string) {
     await prisma.asset.updateMany({ where: { panelId, isActive: true }, data: { isActive: false } });
 
     const result = await generateImage({ prompt: panel.visualPrompt, aspectRatio: panel.chapter.story.aspectRatio || '3:4' });
-    const dataUrl = `data:${result.mimeType};base64,${result.imageData.toString('base64')}`;
+    const fileUrl = await uploadImage(result.imageData, result.mimeType);
 
     await prisma.asset.create({
-      data: { ownerUserId: job.userId, storyId: panel.chapter.storyId, chapterId: panel.chapterId, panelId, assetType: 'panel_image', fileUrl: dataUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
+      data: { ownerUserId: job.userId, storyId: panel.chapter.storyId, chapterId: panel.chapterId, panelId, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
     });
 
     await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'completed', finishedAt: new Date() } });
@@ -297,9 +298,9 @@ export async function processRegenerateChapter(jobId: string) {
 
       try {
         const result = await generateImage({ prompt: panel.visualPrompt, aspectRatio: chapter.story.aspectRatio || '3:4' });
-        const dataUrl = `data:${result.mimeType};base64,${result.imageData.toString('base64')}`;
+        const fileUrl = await uploadImage(result.imageData, result.mimeType);
         await prisma.asset.create({
-          data: { ownerUserId: job.userId, storyId: chapter.storyId, chapterId: chapter.id, panelId: panel.id, assetType: 'panel_image', fileUrl: dataUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
+          data: { ownerUserId: job.userId, storyId: chapter.storyId, chapterId: chapter.id, panelId: panel.id, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
         });
       } catch (imgErr: any) {
         console.error(`Regen panel ${panel.panelNumber} failed:`, imgErr.message);
