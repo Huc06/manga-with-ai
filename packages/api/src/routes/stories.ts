@@ -143,14 +143,17 @@ router.get('/public/stories/:slug/chapters/:chapterId', async (req, res) => {
 
   const chapter = await prisma.chapter.findFirst({
     where: { id: req.params.chapterId as string, storyId: story.id },
-    include: { panels: { orderBy: { panelNumber: 'asc' }, include: { assets: { where: { isActive: true }, select: { fileUrl: true } } } } },
+    include: { panels: { orderBy: { panelNumber: 'asc' } } },
   });
   if (!chapter) { res.status(404).json({ error: 'Not found' }); return; }
+
+  const pageAsset = await prisma.asset.findFirst({ where: { chapterId: chapter.id, assetType: 'chapter_page', isActive: true } });
 
   res.json({
     id: chapter.id, storyId: chapter.storyId, chapterNumber: chapter.chapterNumber,
     title: chapter.title, canonicalSummary: chapter.canonicalSummary,
-    panels: chapter.panels.map((p: any) => ({ id: p.id, panelNumber: p.panelNumber, narrationText: p.narrationText, dialogueText: p.dialogueText, imageUrl: p.assets[0]?.fileUrl || null })),
+    pageImageUrl: pageAsset?.fileUrl || null,
+    panels: chapter.panels.map((p: any) => ({ id: p.id, panelNumber: p.panelNumber, narrationText: p.narrationText, dialogueText: p.dialogueText })),
   });
 });
 
@@ -175,14 +178,31 @@ router.post('/panels/:panelId/regenerate', authMiddleware, async (req: AuthReque
   res.status(202).json({ jobId: job.id, status: 'queued', storyId: panel.chapter.storyId, chapterId: panel.chapterId });
 });
 
+// Like a public story
+router.post('/public/stories/:slug/like', async (req, res) => {
+  const story = await prisma.story.findFirst({ where: { publicSlug: req.params.slug as string, visibility: 'public' } });
+  if (!story) { res.status(404).json({ error: 'Not found' }); return; }
+  await prisma.publicStoryMetrics.upsert({ where: { storyId: story.id }, update: { likeCount: { increment: 1 } }, create: { storyId: story.id, likeCount: 1 } });
+  const metrics = await prisma.publicStoryMetrics.findUnique({ where: { storyId: story.id } });
+  res.json({ likes: Number(metrics?.likeCount || 0) });
+});
+
+// Share count increment
+router.post('/public/stories/:slug/share', async (req, res) => {
+  const story = await prisma.story.findFirst({ where: { publicSlug: req.params.slug as string, visibility: 'public' } });
+  if (!story) { res.status(404).json({ error: 'Not found' }); return; }
+  await prisma.publicStoryMetrics.upsert({ where: { storyId: story.id }, update: { shareCount: { increment: 1 } }, create: { storyId: story.id, shareCount: 1 } });
+  res.json({ success: true });
+});
+
 router.get('/public/feed', async (_req, res) => {
   const stories = await prisma.story.findMany({
     where: { visibility: 'public' },
     orderBy: { updatedAt: 'desc' },
     take: 20,
-    select: { title: true, publicSlug: true, coverImageUrl: true, synopsis: true, totalChapters: true, updatedAt: true },
+    select: { title: true, publicSlug: true, coverImageUrl: true, synopsis: true, totalChapters: true, updatedAt: true, metrics: { select: { viewCount: true, likeCount: true, shareCount: true } } },
   });
-  res.json({ items: stories });
+  res.json({ items: stories.map(s => ({ ...s, viewCount: Number(s.metrics?.viewCount || 0), likeCount: Number(s.metrics?.likeCount || 0), shareCount: Number(s.metrics?.shareCount || 0) })) });
 });
 
 export default router;

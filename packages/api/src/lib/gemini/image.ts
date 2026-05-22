@@ -1,10 +1,12 @@
-import { ai, IMAGE_MODEL } from './client';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+
+const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 interface GenerateImageOptions {
   prompt: string;
   referenceImages?: { data: string; mimeType: string }[];
   aspectRatio?: string;
-  imageSize?: string;
 }
 
 interface ImageResult {
@@ -14,37 +16,51 @@ interface ImageResult {
 }
 
 export async function generateImage(opts: GenerateImageOptions): Promise<ImageResult> {
-  const contents: any[] = [{ text: opts.prompt }];
+  const parts: any[] = [{ text: opts.prompt }];
 
   if (opts.referenceImages) {
     for (const ref of opts.referenceImages) {
-      contents.push({ inlineData: { mimeType: ref.mimeType, data: ref.data } });
+      parts.push({ inline_data: { mime_type: ref.mimeType, data: ref.data } });
     }
   }
 
-  const response = await ai.models.generateContent({
-    model: IMAGE_MODEL,
-    contents,
-    config: {
-      responseModalities: ['TEXT', 'IMAGE'],
-      imageConfig: {
-        aspectRatio: opts.aspectRatio || '3:4',
-        imageSize: opts.imageSize || '1K',
-      },
-    },
+  const body = JSON.stringify({
+    contents: [{ parts }],
+    generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
   });
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent`;
+  const apiKey = process.env.GEMINI_API_KEY!;
+  const tmpFile = `/tmp/gemini_req_${Date.now()}.json`;
+
+  fs.writeFileSync(tmpFile, body);
+
+  let data: any;
+  try {
+    console.log('[IMAGE] Calling curl for image generation...');
+    const result = execSync(
+      `curl -sk -X POST "${url}" -H "x-goog-api-key: ${apiKey}" -H "Content-Type: application/json" -d @${tmpFile}`,
+      { maxBuffer: 50 * 1024 * 1024, timeout: 120000 }
+    );
+    console.log('[IMAGE] Curl returned, parsing response...');
+    data = JSON.parse(result.toString());
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch {}
+  }
+
+  if (data.error) throw new Error(`Gemini API: ${data.error.message?.slice(0, 200)}`);
+
+  const responseParts = data.candidates?.[0]?.content?.parts || [];
   let imageData: Buffer | null = null;
   let mimeType = 'image/png';
   let text: string | undefined;
 
-  const parts = response.candidates?.[0]?.content?.parts || [];
-  for (const part of parts) {
-    if (part.text) {
-      text = part.text;
-    } else if (part.inlineData) {
-      imageData = Buffer.from(part.inlineData.data!, 'base64');
-      mimeType = part.inlineData.mimeType || 'image/png';
+  for (const part of responseParts) {
+    if (part.text) text = part.text;
+    else if (part.inlineData || part.inline_data) {
+      const inline = part.inlineData || part.inline_data;
+      imageData = Buffer.from(inline.data, 'base64');
+      mimeType = inline.mimeType || inline.mime_type || 'image/png';
     }
   }
 

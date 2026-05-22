@@ -220,6 +220,7 @@ model PublicStoryMetrics {
   storyId         String   @id @map("story_id") @db.Uuid
   viewCount       BigInt   @default(0) @map("view_count")
   uniqueViewCount BigInt   @default(0) @map("unique_view_count")
+  likeCount       BigInt   @default(0) @map("like_count")
   shareCount      BigInt   @default(0) @map("share_count")
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 

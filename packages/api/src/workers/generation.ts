@@ -3,6 +3,11 @@ import { generateStructuredJSON, generateText } from '../lib/gemini';
 import { generateImage } from '../lib/gemini';
 import { uploadImage } from '../lib/storage';
 
+// Remove null bytes and invalid UTF-8 from strings before DB insert
+function sanitize(str: string): string {
+  return str.replace(/\x00/g, '').replace(/[\uFFFD]/g, '');
+}
+
 const STORY_BIBLE_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -155,7 +160,7 @@ export async function processCreateStory(jobId: string) {
           chapterId: chapter.id, panelNumber: panel.panelNumber,
           narrationText: panel.narration || null,
           dialogueText: panel.dialogue || [],
-          visualPrompt: panel.visualPrompt,
+          visualPrompt: sanitize(panel.visualPrompt),
         },
       });
     }
@@ -163,25 +168,29 @@ export async function processCreateStory(jobId: string) {
     // Generate one full page image with character references
     const charRefs = await prisma.character.findMany({ where: { storyId: job.storyId!, referenceImageUrl: { not: null } }, take: 5 });
     try {
-      const refImages = charRefs.map(c => ({ data: c.referenceImageUrl!.replace(/^data:[^;]+;base64,/, ''), mimeType: 'image/png' }));
-      const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3', imageSize: '2K' });
+      const refImages = charRefs.filter(c => c.referenceImageUrl && c.referenceImageUrl.startsWith('data:')).map(c => ({ data: c.referenceImageUrl!.replace(/^data:[^;]+;base64,/, ''), mimeType: 'image/png' }));
+      const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3' });
+      console.log('[IMAGE] Got image, size:', result.imageData.length, 'bytes');
       const fileUrl = await uploadImage(result.imageData, result.mimeType);
+      console.log('[IMAGE] Saved to:', fileUrl);
       await prisma.asset.create({
         data: {
           ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id,
           assetType: 'chapter_page', fileUrl, mimeType: result.mimeType,
-          generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: fullPagePrompt },
+          generationModel: 'gemini-2.5-flash-image', generationParams: { prompt: sanitize(fullPagePrompt).slice(0, 500) },
         },
       });
+      console.log('[IMAGE] Asset saved to DB');
     } catch (imgErr: any) {
-      console.error('Full page generation failed:', imgErr.message);
+      console.error("Full page generation failed:", imgErr.message, "\nStack:", imgErr.stack?.slice(0,300));
     }
 
-    // Update story counts
-    await prisma.story.update({ where: { id: job.storyId! }, data: { totalChapters: 1, totalPanels: scenePlan.panels.length } });
+    // Update story counts + set cover from first chapter image
+    const coverAsset = await prisma.asset.findFirst({ where: { storyId: job.storyId!, assetType: 'chapter_page' } });
+    await prisma.story.update({ where: { id: job.storyId! }, data: { totalChapters: 1, totalPanels: scenePlan.panels.length, coverImageUrl: coverAsset?.fileUrl || null } });
     await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'completed', chapterId: chapter.id, finishedAt: new Date() } });
   } catch (err: any) {
-    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: err.message, finishedAt: new Date() } });
+    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: sanitize(err.message || "Unknown error"), finishedAt: new Date() } });
   }
 }
 
@@ -225,7 +234,7 @@ export async function processContinueStory(jobId: string) {
 
     for (const panel of scenePlan.panels) {
       await prisma.chapterPanel.create({
-        data: { chapterId: chapter.id, panelNumber: panel.panelNumber, narrationText: panel.narration || null, dialogueText: panel.dialogue || [], visualPrompt: panel.visualPrompt },
+        data: { chapterId: chapter.id, panelNumber: panel.panelNumber, narrationText: panel.narration || null, dialogueText: panel.dialogue || [], visualPrompt: sanitize(panel.visualPrompt) },
       });
     }
 
@@ -233,13 +242,13 @@ export async function processContinueStory(jobId: string) {
     const charRefs = characters.filter(c => c.referenceImageUrl).slice(0, 5);
     try {
       const refImages = charRefs.map(c => ({ data: c.referenceImageUrl!.replace(/^data:[^;]+;base64,/, ''), mimeType: 'image/png' }));
-      const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3', imageSize: '2K' });
+      const result = await generateImage({ prompt: fullPagePrompt, referenceImages: refImages.length ? refImages : undefined, aspectRatio: '2:3' });
       const fileUrl = await uploadImage(result.imageData, result.mimeType);
       await prisma.asset.create({
-        data: { ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id, assetType: 'chapter_page', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: fullPagePrompt } },
+        data: { ownerUserId: job.userId, storyId: job.storyId!, chapterId: chapter.id, assetType: 'chapter_page', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: sanitize(fullPagePrompt) } },
       });
     } catch (imgErr: any) {
-      console.error('Full page generation failed:', imgErr.message);
+      console.error("Full page generation failed:", imgErr.message, "\nStack:", imgErr.stack?.slice(0,300));
     }
 
     // Update bible version
@@ -258,7 +267,7 @@ export async function processContinueStory(jobId: string) {
     await prisma.story.update({ where: { id: job.storyId! }, data: { totalChapters: chapterNumber, latestStoryBibleVersion: newVersion } });
     await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'completed', chapterId: chapter.id, finishedAt: new Date() } });
   } catch (err: any) {
-    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: err.message, finishedAt: new Date() } });
+    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: sanitize(err.message || "Unknown error"), finishedAt: new Date() } });
   }
 }
 
@@ -277,12 +286,12 @@ export async function processRegeneratePanel(jobId: string) {
     const fileUrl = await uploadImage(result.imageData, result.mimeType);
 
     await prisma.asset.create({
-      data: { ownerUserId: job.userId, storyId: panel.chapter.storyId, chapterId: panel.chapterId, panelId, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
+      data: { ownerUserId: job.userId, storyId: panel.chapter.storyId, chapterId: panel.chapterId, panelId, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: sanitize(panel.visualPrompt) }, version: 2 },
     });
 
     await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'completed', finishedAt: new Date() } });
   } catch (err: any) {
-    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: err.message, finishedAt: new Date() } });
+    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: sanitize(err.message || "Unknown error"), finishedAt: new Date() } });
   }
 }
 
@@ -300,7 +309,7 @@ export async function processRegenerateChapter(jobId: string) {
         const result = await generateImage({ prompt: panel.visualPrompt, aspectRatio: chapter.story.aspectRatio || '3:4' });
         const fileUrl = await uploadImage(result.imageData, result.mimeType);
         await prisma.asset.create({
-          data: { ownerUserId: job.userId, storyId: chapter.storyId, chapterId: chapter.id, panelId: panel.id, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: panel.visualPrompt }, version: 2 },
+          data: { ownerUserId: job.userId, storyId: chapter.storyId, chapterId: chapter.id, panelId: panel.id, assetType: 'panel_image', fileUrl, mimeType: result.mimeType, generationModel: 'gemini-3-pro-image-preview', generationParams: { prompt: sanitize(panel.visualPrompt) }, version: 2 },
         });
       } catch (imgErr: any) {
         console.error(`Regen panel ${panel.panelNumber} failed:`, imgErr.message);
@@ -309,6 +318,6 @@ export async function processRegenerateChapter(jobId: string) {
 
     await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'completed', finishedAt: new Date() } });
   } catch (err: any) {
-    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: err.message, finishedAt: new Date() } });
+    await prisma.generationJob.update({ where: { id: jobId }, data: { status: 'failed', errorMessage: sanitize(err.message || "Unknown error"), finishedAt: new Date() } });
   }
 }

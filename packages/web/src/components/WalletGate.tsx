@@ -10,15 +10,13 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
   const { connect } = useConnect();
   const connectors = useConnectors();
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) setReady(true);
+  }, []);
   const [showRetry, setShowRetry] = useState(false);
 
   useAutoConnect(() => setShowRetry(true));
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('token')) {
-      setReady(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (ready || showRetry) return;

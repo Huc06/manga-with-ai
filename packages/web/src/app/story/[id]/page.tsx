@@ -8,40 +8,66 @@ export default function StoryPage() {
   const { id } = useParams();
   const [story, setStory] = useState<any>(null);
   const [chapters, setChapters] = useState<any[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api(`/v1/stories/${id}`).then((data: any) => {
       setStory(data.story);
-      Promise.all(
-        data.chapters.map((ch: any) => api(`/v1/stories/${id}/chapters/${ch.id}`))
-      ).then(setChapters);
+      Promise.all(data.chapters.map((ch: any) => api(`/v1/stories/${id}/chapters/${ch.id}`))).then(setChapters);
     }).catch(console.error);
   }, [id]);
 
-  if (!story) return <div className="p-4 text-center text-gray-400">Loading...</div>;
-  if (!chapters.length) return <div className="p-4 text-center text-gray-400">Loading chapters...</div>;
+  async function handlePublish() {
+    await api(`/v1/stories/${id}/publish`, { method: 'POST' });
+    setStory({ ...story, visibility: 'public' });
+  }
+
+  if (!story) return <div className="p-8 text-center font-label text-secondary">Loading...</div>;
 
   return (
-    <main className="p-4 pt-8 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold">{story.title}</h1>
-      <p className="text-sm text-gray-400 mt-1">← Swipe to read chapters →</p>
-
-      {/* Horizontal snap scroll */}
-      <div ref={scrollRef} className="mt-4 flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
-        {chapters.map((ch) => (
-          <div key={ch.id} className="snap-center shrink-0 w-full">
-            <p className="text-xs text-gray-400 mb-2">Chapter {ch.chapterNumber}{ch.title ? ` — ${ch.title}` : ''}</p>
-            {ch.pageImageUrl && (
-              <img src={ch.pageImageUrl} alt={`Chapter ${ch.chapterNumber}`} className="w-full rounded-lg border border-gray-700" />
-            )}
-          </div>
-        ))}
+    <main className="pt-6 px-4 max-w-lg mx-auto">
+      {/* Title */}
+      <div className="border-4 border-on-surface bg-white comic-shadow p-4 mb-6">
+        <h1 className="font-display text-2xl text-primary uppercase tracking-tighter">{story.title}</h1>
       </div>
 
-      <Link href={`/story/${id}/continue`} className="block mt-4 text-center bg-purple-600 hover:bg-purple-700 py-3 rounded-xl font-semibold">
-        Continue Story →
+      {/* Chapters - horizontal snap scroll */}
+      {chapters.length > 0 && (
+        <>
+          <p className="font-label text-xs text-secondary uppercase mb-2 tracking-wider">← Swipe chapters →</p>
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
+            {chapters.map((ch) => (
+              <div key={ch.id} className="snap-center shrink-0 w-full">
+                <div className="border-4 border-on-surface bg-white comic-shadow overflow-hidden">
+                  <div className="bg-on-surface text-white px-3 py-1 font-label text-xs font-bold uppercase">
+                    Chapter {ch.chapterNumber}{ch.title ? ` — ${ch.title}` : ''}
+                  </div>
+                  {ch.pageImageUrl && <img src={ch.pageImageUrl} alt={`Chapter ${ch.chapterNumber}`} className="w-full" />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {chapters.length === 0 && (
+        <div className="border-4 border-dashed border-secondary/50 p-8 text-center bg-surface-container-low speed-lines">
+          <p className="font-label text-sm text-secondary uppercase font-bold animate-pulse">Generating...</p>
+        </div>
+      )}
+
+      <Link href={`/story/${id}/continue`} className="block mt-6 w-full bg-primary text-white font-display text-lg text-center border-4 border-on-surface px-6 py-4 comic-shadow hover:bg-primary-container active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase">
+        CONTINUE STORY →
       </Link>
+
+      {/* Publish */}
+      {story.visibility !== 'public' && (
+        <button onClick={handlePublish} className="block mt-3 w-full bg-white text-on-surface font-display text-lg text-center border-4 border-on-surface px-6 py-4 comic-shadow hover:bg-surface-container active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase">
+          PUBLISH TO EXPLORE
+        </button>
+      )}
+      {story.visibility === 'public' && (
+        <p className="mt-3 text-center font-label text-xs text-secondary uppercase">✓ Published</p>
+      )}
     </main>
   );
 }

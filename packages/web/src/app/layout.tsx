@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import { WalletGate } from '@/components/WalletGate';
 import { BottomNav } from '@/components/BottomNav';
+import { Header } from '@/components/Header';
 
 export const metadata: Metadata = {
   title: 'MangaWithAI',
@@ -12,10 +13,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-950 text-white min-h-screen pb-16">
+      <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+      </head>
+      <body className="bg-surface text-on-surface min-h-screen font-body pb-20">
+        <div className="fixed inset-0 halftone-bg pointer-events-none opacity-40 z-0"></div>
         <Providers>
           <WalletGate>
-            {children}
+            <div className="relative z-10">
+              <Header />
+              {children}
+            </div>
             <BottomNav />
           </WalletGate>
         </Providers>
