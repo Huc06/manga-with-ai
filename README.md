@@ -134,23 +134,57 @@ GEMINI_API_KEY=         # Google AI Studio key
 JWT_SECRET=             # Any secret string
 DATABASE_URL=           # PostgreSQL connection string
 
-# Optional (R2 — falls back to base64 without these)
+# Optional (R2 — falls back to local file without these)
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET_NAME=
 R2_PUBLIC_URL=
 
+# Payment (optional — disabled if not set, all free)
+MERCHANT_WALLET=          # Your Celo address to receive payments
+
 # App
 API_PORT=4000
+PUBLIC_API_URL=http://localhost:4000
 NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
+
+## Payment (x402 on Celo)
+
+Powered by [`n-payment`](https://www.npmjs.com/package/n-payment) SDK.
+
+- **First story free**, then $0.01 USDC per generation
+- Payment via x402 protocol on Celo Sepolia
+- AI agents pay automatically via `fetchWithPayment()`
+- Set `MERCHANT_WALLET` env to enable, unset = all free
+
+### For AI Agents
+
+```typescript
+import { createPaymentClient } from 'n-payment';
+
+const client = createPaymentClient({
+  chains: ['celo-sepolia'],
+  ows: { wallet: 'manga-agent', privateKey: process.env.CELO_KEY },
+  celo: { payAsset: 'USDC' },
+});
+
+const res = await client.fetchWithPayment('https://mangawithai.duckdns.org/v1/stories', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt: 'A ninja cat', stylePreset: 'manga-bw', panelCount: 4 }),
+});
+```
+
+See `/api-docs` page in the app for full documentation.
 
 ## Deploy
 
 | Component | Recommended | Free tier |
 |-----------|------------|-----------|
 | Frontend | Vercel | Yes |
-| Backend | Railway | $5/mo |
-| Database | Railway PostgreSQL | Included |
+| Backend | AWS Lightsail | $5/mo |
+| Database | PostgreSQL (Docker) | Included |
 | Storage | Cloudflare R2 | 10GB free |
+| Payment | n-payment (Celo) | Free SDK |
