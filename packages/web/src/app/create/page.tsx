@@ -9,7 +9,6 @@ interface CharRef { name: string; role: string; imageData: string; preview: stri
 export default function CreatePage() {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
-  const [style, setStyle] = useState<'manga-bw' | 'manga-soft-color'>('manga-bw');
   const [panelCount, setPanelCount] = useState<4 | 6 | 8>(4);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
@@ -46,7 +45,7 @@ export default function CreatePage() {
 
     const res = await api<{ jobId: string; storyId: string }>('/v1/stories', {
       method: 'POST',
-      body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: style, panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
+      body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: 'manga-bw', panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
     });
 
     const interval = setInterval(async () => {
@@ -123,27 +122,15 @@ export default function CreatePage() {
           </div>
         </div>
 
-        {/* Style + Panels row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="relative pt-2">
-            <label className="absolute -top-1 left-3 bg-white px-1 font-label text-[10px] border border-on-surface z-10 font-bold uppercase">Style</label>
-            <div className="flex flex-col gap-1 border-2 border-on-surface p-2 bg-surface-container">
-              {(['manga-bw', 'manga-soft-color'] as const).map((s) => (
-                <button key={s} type="button" onClick={() => setStyle(s)} className={`py-1.5 border-2 font-label text-[10px] font-bold uppercase ${style === s ? 'border-primary bg-primary text-white' : 'border-on-surface bg-white text-on-surface'}`}>
-                  {s === 'manga-bw' ? 'B&W INK' : 'SOFT COLOR'}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="relative pt-2">
-            <label className="absolute -top-1 left-3 bg-white px-1 font-label text-[10px] border border-on-surface z-10 font-bold uppercase">Panels</label>
-            <div className="flex flex-col gap-1 border-2 border-on-surface p-2 bg-surface-container">
-              {([4, 6, 8] as const).map((n) => (
-                <button key={n} type="button" onClick={() => setPanelCount(n)} className={`py-1.5 border-2 font-label text-[10px] font-bold ${panelCount === n ? 'border-primary bg-primary text-white' : 'border-on-surface bg-white text-on-surface'}`}>
-                  {n} PANELS
-                </button>
-              ))}
-            </div>
+        {/* Panels */}
+        <div className="relative pt-2">
+          <label className="absolute -top-1 left-3 bg-white px-1 font-label text-[10px] border border-on-surface z-10 font-bold uppercase">Panels per page</label>
+          <div className="flex gap-2 border-2 border-on-surface p-2 bg-surface-container">
+            {([4, 6, 8] as const).map((n) => (
+              <button key={n} type="button" onClick={() => setPanelCount(n)} className={`flex-1 py-2 border-2 font-label text-xs font-bold ${panelCount === n ? 'border-primary bg-primary text-white' : 'border-on-surface bg-white text-on-surface'}`}>
+                {n}
+              </button>
+            ))}
           </div>
         </div>
       </form>

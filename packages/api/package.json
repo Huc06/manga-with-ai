@@ -12,15 +12,16 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
     "@google/genai": "^1.0.0",
     "@manga-with-ai/shared": "workspace:*",
     "@prisma/client": "^6.2.1",
-    "@aws-sdk/client-s3": "^3.700.0",
     "bullmq": "^5.30.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "n-payment": "^0.25.0",
     "viem": "^2.21.0"
   },
   "devDependencies": {

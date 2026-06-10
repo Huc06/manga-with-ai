@@ -14,6 +14,7 @@ export function Header() {
         </Link>
       </div>
       <div className="flex items-center gap-2">
+        <Link href="/api-docs" className="font-label text-[10px] bg-on-surface text-white px-2 py-1 font-bold uppercase hover:bg-primary transition-colors">API</Link>
         <ConnectWalletButton />
         {isAuthed && (
           <Link href="/profile" className="w-10 h-10 border-2 border-on-surface overflow-hidden bg-surface-container flex items-center justify-center">

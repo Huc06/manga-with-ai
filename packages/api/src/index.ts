@@ -32,6 +32,17 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/v1', authRouter);
+
+// Payment: free tier check + x402 paywall (only if MERCHANT_WALLET set)
+if (process.env.MERCHANT_WALLET) {
+  const { freeTierGuard } = require('./middleware/freeTier');
+  const { paywall } = require('./middleware/paywall');
+  app.use('/v1', freeTierGuard, (req: any, res: any, next: any) => {
+    if (req.skipPayment) return next();
+    return paywall(req, res, next);
+  });
+}
+
 app.use('/v1', storiesRouter);
 
 const PORT = process.env.API_PORT || 4000;
