@@ -37,23 +37,34 @@ export default function CreatePage() {
     setCharRefs(charRefs.filter((_, i) => i !== index));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const [showPayModal, setShowPayModal] = useState(false);
+
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!prompt.trim()) return;
     setLoading(true);
     setStatus('ESTABLISHING LEGEND...');
 
-    const res = await api<{ jobId: string; storyId: string }>('/v1/stories', {
-      method: 'POST',
-      body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: 'manga-bw', panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
-    });
+    try {
+      const res = await api<{ jobId: string; storyId: string }>('/v1/stories', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: 'manga-bw', panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
+      });
 
-    const interval = setInterval(async () => {
-      const job = await api<{ status: string; chapterId: string | null }>(`/v1/jobs/${res.jobId}`);
-      setStatus(job.status === 'running' ? 'GENERATING MANGA PAGE...' : job.status.toUpperCase());
-      if (job.status === 'completed') { clearInterval(interval); router.push(`/story/${res.storyId}`); }
-      else if (job.status === 'failed') { clearInterval(interval); setLoading(false); setStatus('GENERATION FAILED'); }
-    }, 3000);
+      const interval = setInterval(async () => {
+        const job = await api<{ status: string; chapterId: string | null }>(`/v1/jobs/${res.jobId}`);
+        setStatus(job.status === 'running' ? 'GENERATING MANGA PAGE...' : job.status.toUpperCase());
+        if (job.status === 'completed') { clearInterval(interval); router.push(`/story/${res.storyId}`); }
+        else if (job.status === 'failed') { clearInterval(interval); setLoading(false); setStatus('GENERATION FAILED'); }
+      }, 3000);
+    } catch (err: any) {
+      setLoading(false);
+      if (err.message?.includes('402') || err.message?.includes('Payment')) {
+        setShowPayModal(true);
+      } else {
+        setStatus(err.message || 'ERROR');
+      }
+    }
   }
 
   if (loading) {
@@ -163,6 +174,24 @@ export default function CreatePage() {
         <span>ESTABLISH LEGEND</span>
         <span className="material-symbols-outlined text-2xl">arrow_forward</span>
       </button>
+
+      {/* Pay Modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="border-4 border-on-surface bg-white comic-shadow-lg p-6 max-w-sm w-full space-y-4">
+            <h3 className="font-display text-xl uppercase text-center">PAYMENT REQUIRED</h3>
+            <p className="text-sm text-secondary text-center">Your free tier is used. Each manga generation costs <strong>$0.01 USDC</strong> on Celo.</p>
+            <div className="border-2 border-on-surface bg-surface-container p-3 text-center">
+              <p className="font-display text-2xl text-primary">$0.01</p>
+              <p className="font-label text-xs text-secondary">USDC on Celo Sepolia</p>
+            </div>
+            <button onClick={() => { setShowPayModal(false); handleSubmit(); }} className="w-full bg-primary text-white font-display text-lg border-4 border-on-surface py-3 comic-shadow active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase">
+              PAY & GENERATE
+            </button>
+            <button onClick={() => setShowPayModal(false)} className="w-full text-center font-label text-xs text-secondary uppercase">Cancel</button>
+          </div>
+        </div>
+      )}
     </main>
     </RequireAuth>
   );
