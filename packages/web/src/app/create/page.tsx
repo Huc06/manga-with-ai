@@ -41,16 +41,17 @@ export default function CreatePage() {
   const [showPayModal, setShowPayModal] = useState(false);
   const [paymentTx, setPaymentTx] = useState<string | null>(null);
 
-  async function handleSubmit(e?: React.FormEvent) {
+  async function handleSubmit(e?: React.FormEvent, txOverride?: string) {
     if (e) e.preventDefault();
     if (!prompt.trim()) return;
     setLoading(true);
     setStatus('ESTABLISHING LEGEND...');
 
+    const tx = txOverride || paymentTx;
     try {
       const res = await api<{ jobId: string; storyId: string }>('/v1/stories', {
         method: 'POST',
-        headers: paymentTx ? { 'x-payment-tx': paymentTx } : undefined,
+        headers: tx ? { 'x-payment-tx': tx } : undefined,
         body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: 'manga-bw', panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
       });
 
@@ -73,7 +74,7 @@ export default function CreatePage() {
   function handlePaySuccess(txHash: string) {
     setShowPayModal(false);
     setPaymentTx(txHash);
-    handleSubmit(); // Retry after payment with tx proof
+    handleSubmit(undefined, txHash); // Pass txHash directly
   }
 
   if (loading) {
