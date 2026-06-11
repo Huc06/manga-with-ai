@@ -39,6 +39,7 @@ export default function CreatePage() {
   }
 
   const [showPayModal, setShowPayModal] = useState(false);
+  const [paymentTx, setPaymentTx] = useState<string | null>(null);
 
   async function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -49,6 +50,7 @@ export default function CreatePage() {
     try {
       const res = await api<{ jobId: string; storyId: string }>('/v1/stories', {
         method: 'POST',
+        headers: paymentTx ? { 'x-payment-tx': paymentTx } : undefined,
         body: JSON.stringify({ prompt: `${prompt}. Style: ${styleTags.join(', ')}`, stylePreset: 'manga-bw', panelCount, characterRefs: charRefs.map(c => ({ name: c.name || 'Character', role: c.role, imageData: c.imageData })) }),
       });
 
@@ -68,9 +70,10 @@ export default function CreatePage() {
     }
   }
 
-  function handlePaySuccess() {
+  function handlePaySuccess(txHash: string) {
     setShowPayModal(false);
-    handleSubmit(); // Retry after payment
+    setPaymentTx(txHash);
+    handleSubmit(); // Retry after payment with tx proof
   }
 
   if (loading) {

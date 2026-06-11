@@ -1,5 +1,5 @@
 'use client';
-import { useWriteContract, useAccount, useReadContract } from 'wagmi';
+import { useWriteContract, useAccount, useReadContract, useSwitchChain } from 'wagmi';
 import { parseUnits } from 'viem';
 import { celoSepolia } from 'wagmi/chains';
 import { useState } from 'react';
@@ -17,7 +17,7 @@ const ERC20_ABI = [
 interface PayModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (txHash: string) => void;
 }
 
 export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
@@ -34,12 +34,14 @@ export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
   } as any);
 
   const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync } = useSwitchChain();
 
   async function handlePay() {
     setPaying(true);
     setError('');
     try {
-      await writeContractAsync({
+      await switchChainAsync({ chainId: celoSepolia.id });
+      const txHash = await writeContractAsync({
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'transfer',
@@ -47,7 +49,7 @@ export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
         chainId: celoSepolia.id,
       });
       setPaying(false);
-      onSuccess();
+      onSuccess(txHash);
     } catch (err: any) {
       setPaying(false);
       setError(err.shortMessage || err.message || 'Payment failed');

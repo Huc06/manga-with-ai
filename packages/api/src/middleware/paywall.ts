@@ -1,11 +1,62 @@
 import { Request, Response, NextFunction } from 'express';
+import { createPublicClient, http, parseAbi } from 'viem';
+import { celoSepolia } from 'viem/chains';
+import { prisma } from '../lib/prisma';
 
-const MERCHANT_ADDRESS = process.env.MERCHANT_WALLET!;
+const MERCHANT_ADDRESS = process.env.MERCHANT_WALLET!.toLowerCase();
+const USDC_ADDRESS = '0x01C5C0122039549AD1493B8220cABEdD739BC44E'.toLowerCase();
+const REQUIRED_AMOUNT = BigInt(10000); // $0.01 USDC (6 decimals)
 
-export function paywall(req: Request, res: Response, next: NextFunction) {
-  // Only block POST requests that create/continue stories
+const client = createPublicClient({
+  chain: celoSepolia,
+  transport: http(),
+});
+
+const ERC20_TRANSFER_EVENT = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)']);
+
+// Verify tx on-chain: correct recipient, amount, token, and not replayed
+async function verifyPaymentTx(txHash: string): Promise<boolean> {
+  try {
+    const receipt = await client.getTransactionReceipt({ hash: txHash as `0x${string}` });
+    if (!receipt || receipt.status !== 'success') return false;
+
+    // Check for USDC Transfer event to merchant with correct amount
+    const transferLog = receipt.logs.find(log =>
+      log.address.toLowerCase() === USDC_ADDRESS &&
+      log.topics[2]?.toLowerCase().includes(MERCHANT_ADDRESS.slice(2))
+    );
+    if (!transferLog) return false;
+
+    // Decode amount from data
+    const amount = BigInt(transferLog.data);
+    if (amount < REQUIRED_AMOUNT) return false;
+
+    // Check replay: tx not used before
+    const existing = await prisma.generationJob.findFirst({
+      where: { inputPayload: { path: ['paymentTx'], equals: txHash } },
+    });
+    if (existing) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function paywall(req: Request, res: Response, next: NextFunction) {
   if (req.method !== 'POST') return next();
   if (!req.path.match(/^\/stories(\/[^/]+\/chapters)?$/)) return next();
+
+  const txHash = req.headers['x-payment-tx'] as string;
+  if (txHash) {
+    const valid = await verifyPaymentTx(txHash);
+    if (valid) {
+      (req as any).paymentTx = txHash;
+      return next();
+    }
+    res.status(402).json({ error: 'Invalid or already used payment transaction' });
+    return;
+  }
 
   res.status(402).json({
     error: 'Payment Required',

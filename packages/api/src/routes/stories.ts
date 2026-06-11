@@ -30,7 +30,7 @@ router.post('/stories', authMiddleware, async (req: AuthRequest, res: Response) 
   }
 
   const job = await prisma.generationJob.create({
-    data: { userId: req.userId!, storyId: story.id, jobType: 'create_story', status: 'queued', inputPayload: { prompt, stylePreset, panelCount } },
+    data: { userId: req.userId!, storyId: story.id, jobType: 'create_story', status: 'queued', inputPayload: { prompt, stylePreset, panelCount, paymentTx: (req as any).paymentTx || null } },
   });
 
   res.status(202).json({ jobId: job.id, status: 'queued', storyId: story.id, chapterId: null });
@@ -84,7 +84,7 @@ router.post('/stories/:storyId/chapters', authMiddleware, async (req: AuthReques
   if (!story) { res.status(404).json({ error: 'Story not found' }); return; }
 
   const job = await prisma.generationJob.create({
-    data: { userId: req.userId!, storyId: story.id, jobType: 'continue_story', status: 'queued', inputPayload: { prompt, branchMode: branchMode || 'canon' } },
+    data: { userId: req.userId!, storyId: story.id, jobType: 'continue_story', status: 'queued', inputPayload: { prompt, branchMode: branchMode || 'canon', paymentTx: (req as any).paymentTx || null } },
   });
 
   res.status(202).json({ jobId: job.id, status: 'queued', storyId: story.id, chapterId: null });
