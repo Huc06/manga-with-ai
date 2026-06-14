@@ -1,5 +1,5 @@
-import MarketplaceContent from "./MarketplaceContent";
+import { redirect } from "next/navigation";
 
 export default function MarketplacePage() {
-  return <MarketplaceContent />;
+  redirect("/library");
 }
