@@ -1,10 +1,16 @@
-'use client';
-import { useAccount, useReadContract, useBalance } from 'wagmi';
-import { celoSepolia } from 'wagmi/chains';
+"use client";
+import { useAccount, useReadContract, useBalance } from "wagmi";
+import { celoSepolia } from "@/lib/wagmi";
 
-const USDC_ADDRESS = '0x01C5C0122039549AD1493B8220cABEdD739BC44E' as const;
+const USDC_ADDRESS = "0x01C5C0122039549AD1493B8220cABEdD739BC44E" as const;
 const ERC20_ABI = [
-  { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
+  {
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
 ] as const;
 
 export function WalletBalance() {
@@ -13,7 +19,7 @@ export function WalletBalance() {
   const { data: usdcBalance } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     args: address ? [address] : undefined,
     chainId: celoSepolia.id,
   } as any);
@@ -23,8 +29,8 @@ export function WalletBalance() {
     chainId: celoSepolia.id,
   });
 
-  const usdc = usdcBalance ? (Number(usdcBalance) / 1e6).toFixed(2) : '0.00';
-  const celo = celoBalance ? Number(celoBalance.formatted).toFixed(3) : '0.000';
+  const usdc = usdcBalance ? (Number(usdcBalance) / 1e6).toFixed(2) : "0.00";
+  const celo = celoBalance ? Number(celoBalance.formatted).toFixed(3) : "0.000";
 
   if (!address) return null;
 

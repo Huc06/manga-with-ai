@@ -1,11 +1,12 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: '/', label: 'Library', icon: 'auto_stories' },
-  { href: '/create', label: 'Create', icon: 'add_box' },
-  { href: '/explore', label: 'Explore', icon: 'explore', active: true },
+  { href: "/", label: "Library", icon: "auto_stories" },
+  { href: "/create", label: "Create", icon: "add_box" },
+  { href: "/marketplace", label: "Market", icon: "storefront" },
+  { href: "/explore", label: "Explore", icon: "explore" },
 ];
 
 export function BottomNav() {
@@ -16,8 +17,17 @@ export function BottomNav() {
       {tabs.map((t) => {
         const isActive = pathname === t.href;
         return (
-          <Link key={t.href} href={t.href} className={`flex flex-col items-center justify-center p-1 ${isActive ? 'bg-primary text-white border-2 border-on-surface comic-shadow-sm' : 'text-on-surface/60'}`}>
-            <span className="material-symbols-outlined text-2xl" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{t.icon}</span>
+          <Link
+            key={t.href}
+            href={t.href}
+            className={`flex flex-col items-center justify-center p-1 ${isActive ? "bg-primary text-white border-2 border-on-surface comic-shadow-sm" : "text-on-surface/60"}`}
+          >
+            <span
+              className="material-symbols-outlined text-2xl"
+              style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+            >
+              {t.icon}
+            </span>
             <span className="font-label text-[11px] font-bold">{t.label}</span>
           </Link>
         );

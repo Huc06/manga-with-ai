@@ -11,5 +11,6 @@ onlyBuiltDependencies:
   - msgpackr-extract
   - prisma
   - protobufjs
+  - secp256k1
   - sharp
   - utf-8-validate
