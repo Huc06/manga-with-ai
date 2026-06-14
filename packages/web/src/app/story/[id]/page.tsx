@@ -62,8 +62,14 @@ export default function StoryPage() {
                   {ch.pageImageUrl && <img src={ch.pageImageUrl} alt={`Chapter ${ch.chapterNumber}`} className="w-full" />}
                 </div>
                 {/* Mint NFT button per chapter */}
-                {mintingChapter === ch.id && metadataURI ? (
-                  <MintNFTButton metadataURI={metadataURI} />
+                {ch.mintTxHash ? (
+                  <p className="mt-2 text-center font-label text-xs text-green-600 uppercase">✓ MINTED</p>
+                ) : mintingChapter === ch.id && metadataURI ? (
+                  <MintNFTButton metadataURI={metadataURI} onMinted={(_tokenId: bigint, txHash: string) => {
+                    api(`/v1/chapters/${ch.id}/minted`, { method: 'POST', body: JSON.stringify({ txHash }) }).catch(() => {});
+                    setChapters(chapters.map(c => c.id === ch.id ? { ...c, mintTxHash: txHash } : c));
+                    setMintingChapter(null);
+                  }} />
                 ) : (
                   <button onClick={() => handleMintPrepare(ch.id)} disabled={mintingChapter === ch.id} className="mt-2 w-full bg-on-surface text-white font-label text-xs py-2 border-2 border-on-surface comic-shadow-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none uppercase disabled:opacity-50">
                     {mintingChapter === ch.id ? 'PREPARING...' : '🎨 MINT AS NFT'}

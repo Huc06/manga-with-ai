@@ -126,6 +126,7 @@ model Chapter {
   chapterStatus     String   @default("published") @map("chapter_status") @db.VarChar(20)
   panelCount        Int      @default(0) @map("panel_count")
   coverPanelAssetId String?  @map("cover_panel_asset_id") @db.Uuid
+  mintTxHash        String?  @map("mint_tx_hash")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 

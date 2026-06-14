@@ -264,6 +264,7 @@ router.get(
       title: chapter.title,
       canonicalSummary: chapter.canonicalSummary,
       pageImageUrl: pageAsset?.fileUrl || null,
+      mintTxHash: (chapter as any).mintTxHash || null,
       panels: chapter.panels.map((p: any) => ({
         id: p.id,
         panelNumber: p.panelNumber,
@@ -373,6 +374,7 @@ router.get("/public/stories/:slug/chapters/:chapterId", async (req, res) => {
     title: chapter.title,
     canonicalSummary: chapter.canonicalSummary,
     pageImageUrl: pageAsset?.fileUrl || null,
+      mintTxHash: (chapter as any).mintTxHash || null,
     panels: chapter.panels.map((p: any) => ({
       id: p.id,
       panelNumber: p.panelNumber,
@@ -624,6 +626,21 @@ router.post('/chapters/:chapterId/metadata', authMiddleware, async (req: AuthReq
   const metadataUrl = await uploadImage(metadataBuffer, 'application/json');
 
   res.json({ metadataURI: metadataUrl, metadata });
+});
+
+// Mark chapter as minted
+router.post('/chapters/:chapterId/minted', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { txHash } = req.body;
+  if (!txHash) { res.status(400).json({ error: 'Missing txHash' }); return; }
+
+  const chapter = await prisma.chapter.findFirst({
+    where: { id: req.params.chapterId as string },
+    include: { story: true },
+  });
+  if (!chapter || chapter.story.ownerUserId !== req.userId!) { res.status(404).json({ error: 'Not found' }); return; }
+
+  await prisma.chapter.update({ where: { id: chapter.id }, data: { mintTxHash: txHash } as any });
+  res.json({ success: true });
 });
 
 export default router;
