@@ -1,89 +1,178 @@
-'use client';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
-
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getApiUrl } from "@/lib/api";
 
 export default function Home() {
-  const { isAuthed, connectWallet, signingIn } = useAuth();
   const [stories, setStories] = useState<any[]>([]);
+  const [filter, setFilter] = useState<"latest" | "popular">("latest");
+  const API = getApiUrl();
 
   useEffect(() => {
-    if (!isAuthed) {
-      setStories([]);
-      return;
-    }
-    api<{ items: any[] }>('/v1/stories')
+    fetch(`${API}/v1/public/feed`)
+      .then((r) => r.json())
       .then((d) => setStories(d.items || []))
       .catch(() => setStories([]));
-  }, [isAuthed]);
+  }, []);
+
+  const sorted =
+    filter === "popular"
+      ? [...stories].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+      : stories;
+
+  function handleLike(slug: string) {
+    fetch(`${API}/v1/public/stories/${slug}/like`, { method: "POST" }).then(
+      () =>
+        setStories(
+          stories.map((s) =>
+            s.publicSlug === slug
+              ? { ...s, likeCount: (s.likeCount || 0) + 1 }
+              : s,
+          ),
+        ),
+    );
+  }
+
+  function handleShare(slug: string) {
+    navigator.clipboard.writeText(`${window.location.origin}/read/${slug}`);
+    fetch(`${API}/v1/public/stories/${slug}/share`, { method: "POST" }).then(
+      () =>
+        setStories(
+          stories.map((s) =>
+            s.publicSlug === slug
+              ? { ...s, shareCount: (s.shareCount || 0) + 1 }
+              : s,
+          ),
+        ),
+    );
+  }
 
   return (
-    <main className="pt-6 px-4 max-w-7xl mx-auto relative">
-      {/* Hero CTA */}
-      <Link href="/create" className="block relative w-full group overflow-hidden border-4 border-on-surface comic-shadow-lg active:translate-x-1 active:translate-y-1 active:shadow-none transition-all mb-6">
-        <div className="relative py-12 flex flex-col items-center justify-center bg-white speed-lines">
-          <span className="font-display text-5xl md:text-6xl text-on-surface mb-3 tracking-tighter uppercase italic">NEW SERIES</span>
-          <div className="bg-primary text-white font-label px-6 py-2.5 border-2 border-on-surface comic-shadow-sm group-hover:bg-primary-container transition-colors tracking-widest font-bold text-sm uppercase">
-            START THE ADVENTURE
-          </div>
-        </div>
-      </Link>
-
-      {/* Section header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-display text-xl uppercase tracking-tighter">CURRENT WORKS</h2>
-        <span className="font-label text-xs bg-on-surface text-white px-2.5 py-1 font-bold">{stories.length} VOLUMES</span>
+    <main className="pt-4 px-4 max-w-lg mx-auto">
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setFilter("latest")}
+          className={`font-label text-xs font-bold uppercase px-4 py-2 border-2 border-on-surface transition-all ${filter === "latest" ? "bg-primary text-white comic-shadow-sm" : "bg-white text-on-surface"}`}
+        >
+          LATEST
+        </button>
+        <button
+          onClick={() => setFilter("popular")}
+          className={`font-label text-xs font-bold uppercase px-4 py-2 border-2 border-on-surface transition-all ${filter === "popular" ? "bg-primary text-white comic-shadow-sm" : "bg-white text-on-surface"}`}
+        >
+          POPULAR
+        </button>
       </div>
 
-      {/* Manga Grid 2 columns */}
-      <div className="grid grid-cols-2 gap-3">
-        {!isAuthed && (
-          <div className="col-span-2 border-4 border-on-surface bg-white shadow-[6px_6px_0px_0px_#1a1c1c] p-6 text-center">
-            <p className="font-display text-lg uppercase mb-2">Your library</p>
-            <p className="text-sm text-secondary mb-4">Connect wallet to see and manage your manga.</p>
-            <button
-              onClick={connectWallet}
-              disabled={signingIn}
-              className="bg-primary text-white font-label font-bold uppercase tracking-widest text-xs px-5 py-2.5 border-2 border-on-surface comic-shadow-sm"
+      {/* Feed */}
+      {sorted.length === 0 ? (
+        <div className="border-4 border-dashed border-secondary/30 p-12 text-center speed-lines">
+          <span className="material-symbols-outlined text-4xl text-secondary/30 block mb-2">
+            explore
+          </span>
+          <p className="font-label text-sm text-secondary uppercase font-bold">
+            No public stories yet
+          </p>
+          <p className="text-xs text-secondary mt-1">
+            Be the first to publish!
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sorted.map((s, idx) => (
+            <Link
+              key={s.publicSlug}
+              href={`/read/${s.publicSlug}`}
+              className="block border-4 border-on-surface bg-white shadow-[6px_6px_0px_0px_#1a1c1c] overflow-hidden active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
             >
-              {signingIn ? 'Signing in...' : 'Connect Wallet'}
-            </button>
-          </div>
-        )}
-        {stories.map((s, idx) => {
-          const rotations = ['', 'rotate-[0.5deg]', '-rotate-[0.5deg]', 'rotate-1'];
-          return (
-            <Link key={s.id} href={`/story/${s.id}`} className={`bg-white border-3 border-on-surface shadow-[4px_4px_0px_0px_#1a1c1c] hover:-translate-y-1 transition-all ${rotations[idx % 4]} group flex flex-col`}>
-              <div className="aspect-[3/4] overflow-hidden border-b-2 border-on-surface bg-surface-container relative">
+              {/* Cover Image */}
+              <div className="relative aspect-[16/9] overflow-hidden border-b-4 border-on-surface bg-surface-container">
                 {s.coverImageUrl ? (
-                  <img src={s.coverImageUrl} alt={s.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                  <img
+                    src={s.coverImageUrl}
+                    alt={s.title}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center speed-lines">
-                    <span className="material-symbols-outlined text-5xl text-secondary/20">auto_stories</span>
+                    <span className="material-symbols-outlined text-5xl text-secondary/20">
+                      auto_stories
+                    </span>
+                  </div>
+                )}
+                <div className="absolute top-3 left-3 bg-primary text-white font-label text-[10px] px-2 py-0.5 border-2 border-on-surface font-bold uppercase">
+                  SHARED
+                </div>
+                {idx === 0 && (
+                  <div className="absolute bottom-3 left-3 bg-primary text-white font-label text-[10px] px-2 py-0.5 border-2 border-on-surface font-bold uppercase">
+                    FEATURED
                   </div>
                 )}
               </div>
-              <div className="p-2.5">
-                <h3 className="font-display text-sm uppercase leading-tight text-on-surface group-hover:text-primary transition-colors">{s.title}</h3>
-                <p className="font-label text-[11px] text-secondary mt-0.5">{s.status === 'ongoing' ? `Chapter ${s.totalChapters}` : s.status}</p>
+
+              {/* Content */}
+              <div className="p-4">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-display text-lg uppercase leading-tight text-on-surface flex-1">
+                    {s.title}
+                  </h3>
+                  <span className="font-label text-[10px] bg-on-surface text-white px-2 py-0.5 font-bold ml-2 shrink-0">
+                    CH. {s.totalChapters || 1}
+                  </span>
+                </div>
+                {s.synopsis && (
+                  <p className="text-sm text-secondary mt-2 line-clamp-2">
+                    {s.synopsis}
+                  </p>
+                )}
+
+                {/* Stats row */}
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="flex items-center gap-1 text-xs text-secondary cursor-pointer hover:text-primary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleLike(s.publicSlug);
+                      }}
+                    >
+                      <span className="material-symbols-outlined text-[16px] text-primary">
+                        favorite
+                      </span>{" "}
+                      {s.likeCount || 0}
+                    </span>
+                    <span
+                      className="flex items-center gap-1 text-xs text-secondary cursor-pointer hover:text-primary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleShare(s.publicSlug);
+                      }}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">
+                        share
+                      </span>{" "}
+                      {s.shareCount || 0}
+                    </span>
+                  </div>
+                  <span className="font-label bg-on-surface text-white text-[10px] px-3 py-1 font-bold inline-flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">
+                      auto_stories
+                    </span>{" "}
+                    READ
+                  </span>
+                </div>
               </div>
             </Link>
-          );
-        })}
+          ))}
+        </div>
+      )}
 
-        {/* Fill This Slot card */}
-        <Link href="/create" className="border-3 border-dashed border-secondary/50 flex flex-col items-center justify-center p-6 text-center bg-surface-container-low hover:bg-surface-container transition-colors min-h-[220px]">
-          <span className="material-symbols-outlined text-3xl text-secondary/50 mb-2">add_circle</span>
-          <p className="font-label text-xs text-secondary uppercase tracking-wider font-bold">FILL THIS SLOT</p>
-        </Link>
+      <div className="py-12 flex flex-col items-center justify-center">
+        <p className="font-display text-sm text-on-surface/30 uppercase">
+          — END —
+        </p>
       </div>
-
-      {/* FAB */}
-      <Link href="/create" className="fixed bottom-20 right-4 w-12 h-12 bg-primary text-white border-2 border-on-surface shadow-[3px_3px_0px_0px_#1a1c1c] flex items-center justify-center active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all z-40">
-        <span className="material-symbols-outlined text-2xl">edit</span>
-      </Link>
     </main>
   );
 }
