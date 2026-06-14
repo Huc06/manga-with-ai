@@ -595,4 +595,35 @@ router.post(
   },
 );
 
+// Generate NFT metadata JSON, upload to R2, return URL
+router.post('/chapters/:chapterId/metadata', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const chapter = await prisma.chapter.findFirst({
+    where: { id: req.params.chapterId as string },
+    include: { story: true },
+  });
+  if (!chapter || chapter.story.ownerUserId !== req.userId!) { res.status(404).json({ error: 'Not found' }); return; }
+
+  const asset = await prisma.asset.findFirst({ where: { chapterId: chapter.id, assetType: 'chapter_page', isActive: true } });
+  if (!asset) { res.status(400).json({ error: 'No image for this chapter' }); return; }
+
+  const metadata = {
+    name: `${chapter.story.title} - Chapter ${chapter.chapterNumber}`,
+    description: chapter.canonicalSummary || `Chapter ${chapter.chapterNumber} of ${chapter.story.title}. AI-generated manga by MangaWithAI.`,
+    image: asset.fileUrl,
+    attributes: [
+      { trait_type: 'Story', value: chapter.story.title },
+      { trait_type: 'Chapter', value: chapter.chapterNumber },
+      { trait_type: 'Style', value: chapter.story.stylePreset },
+      { trait_type: 'Generator', value: 'MangaWithAI' },
+    ],
+  };
+
+  // Upload metadata JSON to R2
+  const { uploadImage } = await import('../lib/storage');
+  const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2));
+  const metadataUrl = await uploadImage(metadataBuffer, 'application/json');
+
+  res.json({ metadataURI: metadataUrl, metadata });
+});
+
 export default router;

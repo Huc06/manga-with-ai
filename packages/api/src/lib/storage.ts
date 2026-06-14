@@ -10,7 +10,7 @@ if (!R2_CONFIGURED && !fs.existsSync(LOCAL_DIR)) {
   fs.mkdirSync(LOCAL_DIR, { recursive: true });
 }
 
-async function uploadToR2(buffer: Buffer, mimeType: string, filename: string): Promise<string> {
+async function uploadToR2(buffer: Buffer, mimeType: string, key: string): Promise<string> {
   const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
   const s3 = new S3Client({
     region: 'auto',
@@ -21,7 +21,6 @@ async function uploadToR2(buffer: Buffer, mimeType: string, filename: string): P
     },
   });
 
-  const key = `panels/${filename}`;
   await s3.send(new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME!,
     Key: key,
@@ -40,11 +39,12 @@ export function uploadImageSync(buffer: Buffer, mimeType: string): string {
 }
 
 export async function uploadImage(buffer: Buffer, mimeType: string): Promise<string> {
-  const ext = mimeType.includes('png') ? 'png' : 'jpg';
+  const ext = mimeType.includes('json') ? 'json' : mimeType.includes('png') ? 'png' : 'jpg';
+  const folder = mimeType.includes('json') ? 'metadata' : 'panels';
   const filename = `${randomUUID()}.${ext}`;
 
   if (R2_CONFIGURED) {
-    return uploadToR2(buffer, mimeType, filename);
+    return uploadToR2(buffer, mimeType, `${folder}/${filename}`);
   }
 
   fs.writeFileSync(path.join(LOCAL_DIR, filename), buffer);
