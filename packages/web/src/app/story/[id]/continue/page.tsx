@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { RequireAuth } from '@/components/RequireAuth';
+import { PayModal } from '@/components/PayModal';
 
 export default function ContinuePage() {
   const { id } = useParams();
@@ -10,30 +11,49 @@ export default function ContinuePage() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [paymentTx, setPaymentTx] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent, txOverride?: string) {
+    if (e) e.preventDefault();
     if (!prompt.trim()) return;
     setLoading(true);
     setStatus('PLANNING NEXT CHAPTER...');
 
-    const res = await api<{ jobId: string }>(`/v1/stories/${id}/chapters`, {
-      method: 'POST',
-      body: JSON.stringify({ prompt, branchMode: 'canon' }),
-    });
+    const tx = txOverride || paymentTx;
+    try {
+      const res = await api<{ jobId: string }>(`/v1/stories/${id}/chapters`, {
+        method: 'POST',
+        headers: tx ? { 'x-payment-tx': tx } : undefined,
+        body: JSON.stringify({ prompt, branchMode: 'canon' }),
+      });
 
-    const interval = setInterval(async () => {
-      const job = await api<{ status: string; chapterId: string | null }>(`/v1/jobs/${res.jobId}`);
-      setStatus(job.status === 'running' ? 'GENERATING MANGA PAGE...' : job.status.toUpperCase());
-      if (job.status === 'completed') { clearInterval(interval); router.push(`/story/${id}`); }
-      else if (job.status === 'failed') { clearInterval(interval); setLoading(false); setStatus('FAILED'); }
-    }, 3000);
+      const interval = setInterval(async () => {
+        const job = await api<{ status: string; chapterId: string | null }>(`/v1/jobs/${res.jobId}`);
+        setStatus(job.status === 'running' ? 'GENERATING MANGA PAGE...' : job.status.toUpperCase());
+        if (job.status === 'completed') { clearInterval(interval); router.push(`/story/${id}`); }
+        else if (job.status === 'failed') { clearInterval(interval); setLoading(false); setStatus('FAILED'); }
+      }, 3000);
+    } catch (err: any) {
+      setLoading(false);
+      if (err.message?.includes('402') || err.message?.includes('Payment')) {
+        setShowPayModal(true);
+      } else {
+        setStatus(err.message || 'ERROR');
+      }
+    }
+  }
+
+  function handlePaySuccess(txHash: string) {
+    setShowPayModal(false);
+    setPaymentTx(txHash);
+    handleSubmit(undefined, txHash);
   }
 
   if (loading) {
     return (
       <RequireAuth>
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
+        <main className="fixed inset-0 flex flex-col items-center justify-center p-4 z-50 bg-surface">
           <div className="border-4 border-on-surface bg-white comic-shadow-lg p-8 text-center speed-lines">
             <span className="material-symbols-outlined text-5xl text-primary animate-pulse mb-4 block">auto_fix_high</span>
             <p className="font-display text-xl uppercase">{status}</p>
@@ -60,6 +80,8 @@ export default function ContinuePage() {
           GENERATE NEXT CHAPTER
         </button>
       </form>
+
+      <PayModal isOpen={showPayModal} onClose={() => setShowPayModal(false)} onSuccess={handlePaySuccess} />
     </main>
     </RequireAuth>
   );
