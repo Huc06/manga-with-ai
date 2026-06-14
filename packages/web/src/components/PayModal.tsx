@@ -4,6 +4,7 @@ import {
   useAccount,
   useReadContract,
   useSwitchChain,
+  usePublicClient,
 } from "wagmi";
 import { parseUnits } from "viem";
 import { celoSepolia } from "@/lib/wagmi";
@@ -55,6 +56,7 @@ export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
 
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync } = useSwitchChain();
+  const publicClient = usePublicClient({ chainId: celoSepolia.id });
 
   async function handlePay() {
     setPaying(true);
@@ -68,6 +70,8 @@ export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
         args: [MERCHANT_WALLET, parseUnits(PRICE_USDC, 6)],
         chainId: celoSepolia.id,
       });
+      // Wait for tx confirmation before notifying success
+      await publicClient!.waitForTransactionReceipt({ hash: txHash });
       setPaying(false);
       onSuccess(txHash);
     } catch (err: any) {

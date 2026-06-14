@@ -44,6 +44,7 @@ if (process.env.MERCHANT_WALLET) {
   app.use("/v1", freeTierGuard, (req: any, res: any, next: any) => {
     if (req.skipPayment) return next();
     if (req.method !== "POST") return next();
+    if (req.path.startsWith("/public")) return next();
     console.log("[PAY] Paywall active for:", req.method, req.path);
     return paywall(req, res, next);
   });
