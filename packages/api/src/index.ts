@@ -38,18 +38,23 @@ app.get("/health", (_req, res) => {
 // ERC-8004 agent discovery
 app.get("/.well-known/agent.json", (_req, res) => {
   res.json({
-    type: "AI Agent",
+    type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: "MangaWithAI",
     description:
       "AI-powered manga creation agent. Creates manga stories from prompts with character consistency via x402 payments on Celo.",
+    active: true,
     erc8004: {
       registry: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
       agentId: 9365,
       chainId: 42220,
     },
     services: [
-      { type: "a2a", endpoint: "https://mangawithai.duckdns.org/v1/stories" },
-      { type: "wallet", endpoint: "0x792cA42F2C2f9D9fB56dDBbfE9a0916AE6e98DD8", chainId: 42220 },
+      { name: "A2A", endpoint: "https://mangawithai.duckdns.org/.well-known/agent.json", version: "0.3.0" },
+      { name: "MCP", endpoint: "https://mangawithai.duckdns.org/v1/stories", version: "2025-06-18" },
+      { name: "agentWallet", endpoint: "eip155:42220:0x792cA42F2C2f9D9fB56dDBbfE9a0916AE6e98DD8" },
+    ],
+    registrations: [
+      { agentId: 9365, agentRegistry: "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" },
     ],
     supportedTrust: ["reputation", "erc8004"],
     capabilities: ["manga-generation", "story-creation", "image-generation", "nft-minting", "marketplace"],
