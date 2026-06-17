@@ -10,8 +10,8 @@ export const CONTRACTS = {
   },
   // Celo mainnet - update after deploy
   celo: {
-    mangaNFT: "" as `0x${string}`,
-    marketplace: "" as `0x${string}`,
+    mangaNFT: "0x8F7714bEb51Bb60d87Da6f9BD28874d0D7D341f1" as `0x${string}`,
+    marketplace: "0x636C633a35FC5783eAD501AE99bA357368800a9F" as `0x${string}`,
     usdc: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as `0x${string}`,
     usdt: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e" as `0x${string}`,
     usdm: "0x765DE816845861e75A25fCA122bb6898B8B1282a" as `0x${string}`,

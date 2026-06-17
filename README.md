@@ -35,12 +35,21 @@ User Prompt → AI Agent → Manga Page → NFT Mint → Marketplace
 4. **Marketplace Agent** — Facilitates buy/sell/like of manga NFTs with multi-asset support (USDC/USDT/USDm)
 5. **Social Agent** — Leaderboard, comments, likes, shares — all tracked on-chain or via API
 
-## Smart Contracts (Celo Sepolia)
+## Smart Contracts
 
-| Contract                      | Address                                                                                                                        | Verified |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| MangaNFT (ERC-721 + ERC-2981) | [`0xC92AA61585e955D6B12735b5D90bca49BcfFf8FA`](https://sepolia.celoscan.io/address/0xC92AA61585e955D6B12735b5D90bca49BcfFf8FA) | ✅       |
-| MangaMarketplace              | [`0xD7420dD58505E5cf10Bb9e91Bf4A0B96a8d7498d`](https://sepolia.celoscan.io/address/0xD7420dD58505E5cf10Bb9e91Bf4A0B96a8d7498d) | ✅       |
+### Celo Mainnet (42220)
+
+| Contract                      | Address                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| MangaNFT (ERC-721 + ERC-2981) | [`0x8F7714bEb51Bb60d87Da6f9BD28874d0D7D341f1`](https://celoscan.io/address/0x8F7714bEb51Bb60d87Da6f9BD28874d0D7D341f1) |
+| MangaMarketplace              | [`0x636C633a35FC5783eAD501AE99bA357368800a9F`](https://celoscan.io/address/0x636C633a35FC5783eAD501AE99bA357368800a9F) |
+
+### Celo Sepolia Testnet (11142220)
+
+| Contract                      | Address                                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| MangaNFT (ERC-721 + ERC-2981) | [`0xC92AA61585e955D6B12735b5D90bca49BcfFf8FA`](https://sepolia.celoscan.io/address/0xC92AA61585e955D6B12735b5D90bca49BcfFf8FA) |
+| MangaMarketplace              | [`0xD7420dD58505E5cf10Bb9e91Bf4A0B96a8d7498d`](https://sepolia.celoscan.io/address/0xD7420dD58505E5cf10Bb9e91Bf4A0B96a8d7498d) |
 
 **Supported Payment Tokens**: USDC, USDT, USDm on Celo
 

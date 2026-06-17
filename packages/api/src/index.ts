@@ -49,15 +49,36 @@ app.get("/.well-known/agent.json", (_req, res) => {
       chainId: 42220,
     },
     services: [
-      { name: "A2A", endpoint: "https://mangawithai.duckdns.org/.well-known/agent.json", version: "0.3.0" },
-      { name: "MCP", endpoint: "https://mangawithai.duckdns.org/v1/stories", version: "2025-06-18" },
-      { name: "agentWallet", endpoint: "eip155:42220:0x792cA42F2C2f9D9fB56dDBbfE9a0916AE6e98DD8" },
+      {
+        name: "A2A",
+        endpoint: "https://mangawithai.duckdns.org/.well-known/agent.json",
+        version: "0.3.0",
+      },
+      {
+        name: "MCP",
+        endpoint: "https://mangawithai.duckdns.org/v1/stories",
+        version: "2025-06-18",
+      },
+      {
+        name: "agentWallet",
+        endpoint: "eip155:42220:0x792cA42F2C2f9D9fB56dDBbfE9a0916AE6e98DD8",
+      },
     ],
     registrations: [
-      { agentId: 9365, agentRegistry: "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" },
+      {
+        agentId: 9365,
+        agentRegistry:
+          "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      },
     ],
     supportedTrust: ["reputation", "erc8004"],
-    capabilities: ["manga-generation", "story-creation", "image-generation", "nft-minting", "marketplace"],
+    capabilities: [
+      "manga-generation",
+      "story-creation",
+      "image-generation",
+      "nft-minting",
+      "marketplace",
+    ],
     pricing: {
       createStory: "0.01 USDC",
       continueChapter: "0.01 USDC",
@@ -65,8 +86,16 @@ app.get("/.well-known/agent.json", (_req, res) => {
       protocol: "x402",
     },
     contracts: {
-      mangaNFT: { address: "0xC92AA61585e955D6B12735b5D90bca49BcfFf8FA", chain: "celo-sepolia", chainId: 11142220 },
-      marketplace: { address: "0xD7420dD58505E5cf10Bb9e91Bf4A0B96a8d7498d", chain: "celo-sepolia", chainId: 11142220 },
+      mangaNFT: {
+        address: "0x8F7714bEb51Bb60d87Da6f9BD28874d0D7D341f1",
+        chain: "celo",
+        chainId: 42220,
+      },
+      marketplace: {
+        address: "0x636C633a35FC5783eAD501AE99bA357368800a9F",
+        chain: "celo",
+        chainId: 42220,
+      },
     },
   });
 });
