@@ -80,7 +80,7 @@ export function MintNFTButton({
           verified
         </span>
         <span className="font-label text-xs text-primary font-bold uppercase">
-          MINTED AS NFT
+          SAVED AS COLLECTIBLE
         </span>
       </div>
     );
@@ -93,8 +93,8 @@ export function MintNFTButton({
         disabled={minting || !address}
         className="flex items-center gap-1.5 bg-on-surface text-white font-label text-xs font-bold uppercase px-3 py-2 border-2 border-on-surface comic-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
       >
-        <span className="material-symbols-outlined text-base">token</span>
-        {minting ? "MINTING..." : "MINT AS NFT"}
+        <span className="material-symbols-outlined text-base">bookmark</span>
+        {minting ? "SAVING..." : "SAVE AS COLLECTIBLE"}
       </button>
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>

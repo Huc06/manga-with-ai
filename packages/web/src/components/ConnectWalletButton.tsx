@@ -5,6 +5,10 @@ import { useAuth } from '@/context/AuthContext';
 export function ConnectWalletButton() {
   const { isAuthed, address, connectWallet, signingIn, error } = useAuth();
 
+  if (typeof window !== 'undefined' && (window as any).ethereum?.isMiniPay) {
+    return null;
+  }
+
   if (isAuthed && address) {
     const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
     return (

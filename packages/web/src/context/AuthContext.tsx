@@ -44,8 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSigningIn(true);
     setError(null);
     try {
-      const nonce = `Sign in to MangaWithAI: ${Date.now()}`;
-      const signature = await signMessageAsync({ message: nonce });
+      const isMiniPay = typeof window !== 'undefined' && (window as any).ethereum?.isMiniPay;
+      let nonce: string;
+      let signature: string;
+
+      if (isMiniPay) {
+        // MiniPay does not support personal_sign — use address-based auth
+        nonce = `Sign in to MangaWithAI: ${Date.now()}`;
+        signature = '0x' + 'minipay_trusted';
+      } else {
+        nonce = `Sign in to MangaWithAI: ${Date.now()}`;
+        signature = await signMessageAsync({ message: nonce });
+      }
+
       const data = await api<{ token: string }>('/v1/session/minipay', {
         method: 'POST',
         body: JSON.stringify({ walletAddress: address, nonce, signature }),
@@ -61,6 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, [address, signMessageAsync]);
+
+  // MiniPay: auto-sign-in after connect (zero-click experience)
+  // On desktop: auto-sign-in if wallet already connected and no token yet
+  useEffect(() => {
+    if (!isConnected || !address || isAuthed || signing.current) return;
+    if (localStorage.getItem('logged_out')) return;
+    signIn();
+  }, [isConnected, address, isAuthed, signIn]);
 
   useEffect(() => {
     if (wantsSignIn.current && isConnected && address) signIn();
