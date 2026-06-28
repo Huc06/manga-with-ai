@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { RequireAuth } from '@/components/RequireAuth';
+import { AnimalAvatar } from '@/components/AnimalAvatar';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ProfilePage() {
@@ -32,7 +33,7 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <section className="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-end">
         <div className="w-36 h-36 border-4 border-on-surface bg-white shadow-[8px_8px_0px_0px_#1a1c1c] overflow-hidden rotate-[-2deg] flex items-center justify-center">
-          <span className="material-symbols-outlined text-6xl text-primary">person</span>
+          <AnimalAvatar address={address} size="lg" />
         </div>
         <div className="flex-1 text-center md:text-left space-y-2">
           <h2 className="font-display text-3xl uppercase bg-on-surface text-white px-4 py-1 inline-block skew-x-[-6deg]">

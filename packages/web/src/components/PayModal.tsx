@@ -99,11 +99,21 @@ export function PayModal({ isOpen, onClose, onSuccess }: PayModalProps) {
         <div className="border-2 border-on-surface bg-surface-container p-3 text-center">
           <p className="font-display text-2xl text-primary">$0.01</p>
           <p className="font-label text-xs text-secondary">
-            USDC on Celo Sepolia
+            USDC
           </p>
           <p className="font-label text-[10px] text-secondary mt-1">
             Your balance: ${balanceFormatted} USDC
           </p>
+          {balance !== undefined && Number(balance) < 10000 && (
+            <a
+              href="https://link.minipay.xyz/add_cash?tokens=USDC"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 font-label text-[10px] text-primary underline"
+            >
+              Deposit USDC →
+            </a>
+          )}
         </div>
 
         {error && <p className="text-xs text-red-500 text-center">{error}</p>}

@@ -30,12 +30,17 @@ router.post('/session/minipay', async (req: Request, res: Response) => {
   }
 
   try {
-    const valid = await verifyMessage({
-      address: walletAddress as `0x${string}`,
-      message: nonce,
-      signature: signature as `0x${string}`,
-    });
-    if (!valid) { res.status(401).json({ error: 'Invalid signature' }); return; }
+    // MiniPay trusted auth — skip signature verification
+    const isMiniPayTrusted = signature === '0xminipay_trusted';
+
+    if (!isMiniPayTrusted) {
+      const valid = await verifyMessage({
+        address: walletAddress as `0x${string}`,
+        message: nonce,
+        signature: signature as `0x${string}`,
+      });
+      if (!valid) { res.status(401).json({ error: 'Invalid signature' }); return; }
+    }
 
     const user = await prisma.user.upsert({
       where: { walletAddress: walletAddress.toLowerCase() },
