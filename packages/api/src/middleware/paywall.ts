@@ -92,7 +92,7 @@ export async function paywall(req: Request, res: Response, next: NextFunction) {
       asset: "USDC",
       assetAddress: "0x01C5C0122039549AD1493B8220cABEdD739BC44E",
       network: "celo-sepolia",
-      chainId: 44787,
+      chainId: 11142220,
       payTo: MERCHANT_ADDRESS,
     },
   });

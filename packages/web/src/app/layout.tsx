@@ -18,6 +18,10 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
+        <meta
           name="talentapp:project_verification"
           content="11f409463b41a7c025f3a68ec3945ae722be80bb6ba03512d889e5c473d89596fe1fdf1a128bb20c93a149176a66cd41e2682fe93ee49b8a2f6d44a77fd97c65"
         />
@@ -26,7 +30,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         />
       </head>
-      <body className="bg-surface text-on-surface min-h-screen font-body pb-20">
+      <body className="bg-surface text-on-surface min-h-screen font-body pb-20 overflow-x-hidden">
         <div className="fixed inset-0 halftone-bg pointer-events-none opacity-40 z-0"></div>
         <Providers>
           <div className="relative z-10">

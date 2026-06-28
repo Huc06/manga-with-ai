@@ -53,10 +53,10 @@ export default function ChapterPage() {
       )}
 
       <div className="mt-6 flex flex-col gap-3">
-        {/* Mint NFT */}
+        {/* Save as Collectible */}
         {!metadataURI ? (
           <button onClick={handlePrepareNFT} disabled={loadingMeta} className="w-full bg-on-surface text-white font-display text-lg border-4 border-on-surface py-3 comic-shadow active:translate-x-1 active:translate-y-1 active:shadow-none transition-all uppercase disabled:opacity-50">
-            {loadingMeta ? 'PREPARING...' : '🎨 MINT AS NFT'}
+            {loadingMeta ? 'PREPARING...' : '🎨 SAVE AS COLLECTIBLE'}
           </button>
         ) : (
           <MintNFTButton metadataURI={metadataURI} />

@@ -7,6 +7,13 @@ const backend =
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@manga-with-ai/shared'],
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@react-native-async-storage/async-storage': false,
+    };
+    return config;
+  },
   async rewrites() {
     if (process.env.NODE_ENV === 'development') return [];
     const base = backend.replace(/\/$/, '');

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-type Tab = "stories" | "nfts";
+type Tab = "stories" | "collectibles";
 
 export default function LibraryPage() {
   const { isAuthed, connectWallet, signingIn } = useAuth();
@@ -39,10 +39,10 @@ export default function LibraryPage() {
           MY STORIES
         </button>
         <button
-          onClick={() => setTab("nfts")}
-          className={`font-label text-xs font-bold uppercase px-4 py-2 border-2 border-on-surface transition-all ${tab === "nfts" ? "bg-on-surface text-white" : "bg-white text-on-surface"}`}
+          onClick={() => setTab("collectibles")}
+          className={`font-label text-xs font-bold uppercase px-4 py-2 border-2 border-on-surface transition-all ${tab === "collectibles" ? "bg-on-surface text-white" : "bg-white text-on-surface"}`}
         >
-          MY NFTs
+          MY COLLECTIBLES
         </button>
       </div>
 
@@ -50,7 +50,7 @@ export default function LibraryPage() {
         <div className="border-4 border-on-surface bg-white shadow-[6px_6px_0px_0px_#1a1c1c] p-6 text-center">
           <p className="font-display text-lg uppercase mb-2">Your library</p>
           <p className="text-sm text-secondary mb-4">
-            Connect wallet to see your manga and NFTs.
+            Connect wallet to see your manga and collectibles.
           </p>
           <button
             onClick={connectWallet}
@@ -139,21 +139,21 @@ export default function LibraryPage() {
           </div>
         </>
       ) : (
-        /* NFTs / Marketplace tab */
+        /* Collectibles tab */
         <div className="space-y-4">
           <div className="border-4 border-on-surface bg-white comic-shadow-lg p-6 text-center">
             <span className="material-symbols-outlined text-4xl text-secondary/30 mb-3">
               collections
             </span>
-            <h2 className="font-display text-lg uppercase mb-2">NO NFTs YET</h2>
+            <h2 className="font-display text-lg uppercase mb-2">NO COLLECTIBLES YET</h2>
             <p className="text-sm text-secondary mb-4">
-              Mint your manga as NFTs or buy from other creators.
+              Save your manga as collectibles or browse from other creators.
             </p>
             <Link
               href="/create"
               className="inline-block bg-primary text-white font-label font-bold uppercase tracking-widest text-xs px-5 py-2.5 border-2 border-on-surface comic-shadow-sm"
             >
-              CREATE & MINT
+              CREATE & SAVE
             </Link>
           </div>
 
@@ -161,11 +161,11 @@ export default function LibraryPage() {
           <div className="grid grid-cols-2 gap-2">
             <div className="border-2 border-on-surface bg-white p-3 text-center">
               <span className="material-symbols-outlined text-xl text-primary mb-1">
-                token
+                bookmark
               </span>
-              <p className="font-label text-[10px] font-bold uppercase">MINT</p>
+              <p className="font-label text-[10px] font-bold uppercase">SAVE</p>
               <p className="font-label text-[9px] text-secondary mt-0.5">
-                Turn manga into NFTs
+                Turn manga into collectibles
               </p>
             </div>
             <div className="border-2 border-on-surface bg-white p-3 text-center">
