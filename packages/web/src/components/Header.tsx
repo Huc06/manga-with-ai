@@ -10,9 +10,8 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 flex justify-between items-center w-full px-4 py-2 bg-surface border-b-4 border-on-surface shadow-[4px_4px_0px_0px_#1a1c1c]">
-      <Link href="/" className="flex items-center gap-2 font-display text-xl text-primary uppercase tracking-tighter">
+      <Link href="/" className="flex items-center">
         <Logo size={60} />
-        MANGA WITH AI
       </Link>
       <div className="flex items-center gap-2">
         <ConnectWalletButton />
